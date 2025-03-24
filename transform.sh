@@ -1,1 +1,0 @@
-perl -pe 's/[\x00-\x1F]/ sprintf "\\u%04X", ord $& /eg' file.json | jq ".ExportUpgrades | map(select(.name|(contains(\"Riven\") or contains(\"Unfused Artifact\"))|not)) | group_by(.name) | map(first)"

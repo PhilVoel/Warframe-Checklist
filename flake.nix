@@ -13,6 +13,8 @@
 					packages = with pkgs; [
 						bacon
 						cargo
+						clippy
+						jq
 					];
 				};
 				packages.default = pkgs.rustPlatform.buildRustPackage {
