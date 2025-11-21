@@ -1,9 +1,13 @@
 [package]
 name = "wf_checklist"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-serde = "1.0.219"
-serde_json = "1.0.140"
+mlua = {version = "0.11.4", features = ["lua54", "serialize", "macros", "macros"]}
+rocket = {version = "0.5.1", features = ["json", "secrets", "uuid"]}
+serde = {version = "1.0.219", features = ["derive"]}
+sqlite = "0.37.0"
+tokio = {version = "1.44.1", features = ["macros"]}
 tokio_schedule = "0.3.2"
+uuid = {version = "1.18.1", features = ["v4"]}
