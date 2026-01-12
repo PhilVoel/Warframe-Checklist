@@ -30,12 +30,15 @@
           ];
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.lua5_4 ];
         };
-        packages.default = pkgs.rustPlatform.buildRustPackage {
-          pname = "WF Checklist";
-          version = "0.1.0";
-          src = self;
-          cargoLock.lockFile = ./Cargo.lock;
-        };
+		packages = rec {
+			default = warframe-checklist;
+			warframe-checklist = pkgs.rustPlatform.buildRustPackage {
+			  pname = "WF Checklist";
+			  version = "0.1.0";
+			  src = self;
+			  cargoLock.lockFile = ./Cargo.lock;
+			};
+		};
       }
     )
     // {
