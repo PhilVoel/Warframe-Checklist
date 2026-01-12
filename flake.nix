@@ -57,6 +57,11 @@
               type = lib.types.str;
               default = "wf-cheklist";
             };
+            port = lib.mkOption {
+              type = lib.types.int;
+              default = 4000;
+              description = "Port to listen on";
+            };
           };
 
           config = lib.mkIf cfg.enable {
@@ -79,6 +84,7 @@
                 User = cfg.user;
                 Group = cfg.group;
                 WorkingDirectory = stateDir;
+                Environment = "ROCKET_PORT=${toString cfg.port}";
               };
             };
           };
