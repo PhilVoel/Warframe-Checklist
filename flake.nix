@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-25.05";
     flake-utils.url = "github:numtide/flake-utils/v1.0.0";
+    crate2nix.url = "github:nix-community/crate2nix/0.15.0";
   };
 
   outputs =
@@ -11,12 +12,44 @@
       flake-utils,
       nixpkgs,
       self,
+      crate2nix,
       ...
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
       let
         pkgs = nixpkgs.legacyPackages."${system}";
+        customBuildRustCrateForPkgs =
+          pkgs:
+          pkgs.buildRustCrate.override {
+            defaultCrateOverrides = pkgs.defaultCrateOverrides // {
+              mlua-sys = _: {
+                nativeBuildInputs = with pkgs; [
+                  pkg-config
+                ];
+                buildInputs = with pkgs; [
+                  lua5_4
+                ];
+              };
+
+              wf_checklist = _: {
+                postPatch = ''
+				  substituteInPlace src/main.rs --replace "curl" "${pkgs.curl}/bin/curl"
+				'';
+                postInstall = ''
+                  mkdir -p $out/share/wf-checklist
+                  cp -r frontend $out/share/wf-checklist/
+                '';
+              };
+            };
+          };
+        generated = crate2nix.tools."${system}".generatedCargoNix {
+          name = "wf_checklist";
+          src = ./.;
+        };
+        generatedBuild = pkgs.callPackage "${generated}/default.nix" {
+          buildRustCrateForPkgs = customBuildRustCrateForPkgs;
+        };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -30,31 +63,8 @@
           ];
           LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.lua5_4 ];
         };
-        packages = rec {
-          default = warframe-checklist;
-          warframe-checklist = pkgs.rustPlatform.buildRustPackage {
-            pname = "wf_checklist";
-            version = "0.1.0";
-            src = self;
-            cargoLock.lockFile = ./Cargo.lock;
 
-            nativeBuildInputs = with pkgs; [
-              pkg-config
-            ];
-            buildInputs = with pkgs; [
-              lua5_4
-            ];
-
-			postPatch = ''
-			  substituteInPlace src/main.rs --replace "curl" "${pkgs.curl}/bin/curl"
-			'';
-
-            postInstall = ''
-              mkdir -p $out/share/wf-checklist
-              cp -r frontend $out/share/wf-checklist/
-            '';
-          };
-        };
+        packages.default = generatedBuild.rootCrate.build;
       }
     )
     // {
@@ -101,11 +111,11 @@
               after = [ "network.target" ];
 
               serviceConfig = {
-                ExecStart = "${self.packages.${pkgs.system}.warframe-checklist}/bin/wf_checklist";
+                ExecStart = "${self.packages.${pkgs.system}.default}/bin/wf_checklist";
                 Restart = "always";
                 User = cfg.user;
                 Group = cfg.user;
-                WorkingDirectory = "${self.packages.${pkgs.system}.warframe-checklist}/share/wf-checklist";
+                WorkingDirectory = "${self.packages.${pkgs.system}.default}/share/wf-checklist";
                 Environment = ''
                   ROCKET_PORT=${toString cfg.port} \
                   WF_STATE_DIR=${cfg.stateDir}
