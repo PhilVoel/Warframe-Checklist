@@ -34,8 +34,8 @@
 
               wf_checklist = _: {
                 postPatch = ''
-				  substituteInPlace src/main.rs --replace "curl" "${pkgs.curl}/bin/curl"
-				'';
+                  				  substituteInPlace src/main.rs --replace "curl" "${pkgs.curl}/bin/curl"
+                  				'';
                 postInstall = ''
                   mkdir -p $out/share/wf-checklist
                   cp -r frontend $out/share/wf-checklist/
@@ -110,17 +110,21 @@
               wantedBy = [ "multi-user.target" ];
               after = [ "network.target" ];
 
-              serviceConfig = {
-                ExecStart = "${self.packages.${pkgs.system}.default}/bin/wf_checklist";
-                Restart = "always";
-                User = cfg.user;
-                Group = cfg.user;
-                WorkingDirectory = "${self.packages.${pkgs.system}.default}/share/wf-checklist";
-                Environment = ''
-                  ROCKET_PORT=${toString cfg.port} \
-                  WF_STATE_DIR=${cfg.stateDir}
-                '';
-              };
+              serviceConfig =
+                let
+                  out = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
+                in
+                {
+                  ExecStart = "${out}/bin/wf_checklist";
+                  Restart = "always";
+                  User = cfg.user;
+                  Group = cfg.user;
+                  WorkingDirectory = "${out}/share/wf-checklist";
+                  Environment = ''
+                    ROCKET_PORT=${toString cfg.port} \
+                    WF_STATE_DIR=${cfg.stateDir}
+                  '';
+                };
             };
           };
         };
